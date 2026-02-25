@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>💡 Idea Capture</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='30'>⚡⚡⚡</text></svg>">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px;
+    }
+    h1 { font-size: 1.4rem; margin-bottom: 24px; opacity: 0.8; }
+    .card {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 12px;
+      padding: 20px;
+      width: 100%;
+      max-width: 600px;
+      margin-bottom: 16px;
+    }
+    label { font-size: 0.8rem; color: #8b949e; display: block; margin-bottom: 8px; }
+    input[type="text"], input[type="password"], textarea {
+      width: 100%;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      color: #e6edf3;
+      padding: 10px 14px;
+      font-size: 1rem;
+      outline: none;
+    }
+    input:focus, textarea:focus { border-color: #58a6ff; }
+    textarea { min-height: 140px; resize: vertical; line-height: 1.6; }
+    .tag-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    .tag {
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 0.8rem;
+      cursor: pointer;
+      user-select: none;
+    }
+    .tag.pro {
+      background: #1f6feb22;
+      border: 1px solid #1f6feb;
+      color: #58a6ff;
+    }
+    .tag.pro.selected { background: #1f6feb; color: #fff; }
+    .tag.life {
+      background: #23863622;
+      border: 1px solid #238636;
+      color: #3fb950;
+    }
+    .tag.life.selected { background: #238636; color: #fff; }
+
+    .btn-row { display: flex; gap: 10px; margin-top: 16px; }
+    button {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    button:active { opacity: 0.7; }
+    #voiceBtn { background: #21262d; color: #e6edf3; border: 1px solid #30363d; }
+    #voiceBtn.listening { background: #da3633; color: #fff; border-color: #da3633; }
+    #pushBtn { background: #238636; color: #fff; }
+    #pushBtn:disabled { background: #21262d; color: #8b949e; cursor: not-allowed; }
+    #clearBtn { background: #21262d; color: #8b949e; border: 1px solid #30363d; flex: 0 0 auto; padding: 12px 16px; }
+
+    .status { font-size: 0.85rem; margin-top: 12px; min-height: 20px; color: #8b949e; text-align: center; }
+    .status.success { color: #3fb950; }
+    .status.error { color: #f85149; }
+    .status.info { color: #58a6ff; }
+
+    details { margin-top: 0; }
+    summary { cursor: pointer; font-size: 0.85rem; color: #8b949e; user-select: none; }
+    .settings-grid { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
+
+    .history-item {
+      background: #0d1117;
+      border: 1px solid #21262d;
+      border-radius: 6px;
+      padding: 10px;
+      font-size: 0.85rem;
+      margin-top: 8px;
+      color: #8b949e;
+    }
+    .history-item strong { color: #e6edf3; }
+    .history-item a { color: #58a6ff; text-decoration: none; }
+    .history-item a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<h1>💡 Idea Capture</h1>
+
+<!-- Settings -->
+<div class="card">
+  <details id="settingsDetails">
+    <summary>⚙️ GitHub設定</summary>
+    <div class="settings-grid">
+      <div>
+        <label>GitHub Username</label>
+        <input type="text" id="ghUser" placeholder="your-username">
+      </div>
+      <div>
+        <label>Repository Name</label>
+        <input type="text" id="ghRepo" placeholder="Mylife">
+      </div>
+      <div>
+        <label>Personal Access Token</label>
+        <input type="password" id="ghToken" placeholder="ghp_xxxxxxxxxxxx">
+      </div>
+      <button onclick="saveSettings()" style="background:#1f6feb; color:#fff; flex:none;">
+        💾 保存
+      </button>
+    </div>
+  </details>
+</div>
+
+<!-- Main Capture -->
+<div class="card">
+  <label>アイデア</label>
+  <textarea id="ideaText" placeholder="思いついたことを書く、または🎤を押して話す..."></textarea>
+
+  <div style="margin-top:12px;">
+    <label>タグ（複数選択可）</label>
+    <div class="tag-row">
+      <!-- Professional / category -->
+      <span class="tag pro" data-key="resilience" data-kind="category" onclick="toggleTag(this)">🛡️ Resilience</span>
+      <span class="tag pro" data-key="soc" data-kind="category" onclick="toggleTag(this)">🔒 SOC</span>
+      <span class="tag pro" data-key="threat-intel" data-kind="category" onclick="toggleTag(this)">🚨 Threat Intel</span>
+      <span class="tag pro" data-key="cloud" data-kind="category" onclick="toggleTag(this)">☁️ Cloud</span>
+      <span class="tag pro" data-key="ai-ml" data-kind="category" onclick="toggleTag(this)">🤖 AI/ML</span>
+      <span class="tag pro" data-key="architecture" data-kind="category" onclick="toggleTag(this)">🏗️ Architecture</span>
+      <span class="tag pro" data-key="people" data-kind="category" onclick="toggleTag(this)">👥 People</span>
+      <span class="tag pro" data-key="process" data-kind="category" onclick="toggleTag(this)">📋 Process</span>
+
+      <!-- Personal / category -->
+      <span class="tag life" data-key="ski" data-kind="category" onclick="toggleTag(this)">⛷️ Ski</span>
+      <span class="tag life" data-key="hiking" data-kind="category" onclick="toggleTag(this)">🥾 Hiking</span>
+      <span class="tag life" data-key="camp" data-kind="category" onclick="toggleTag(this)">🏕️ Camp</span>
+      <span class="tag life" data-key="bike" data-kind="category" onclick="toggleTag(this)">🏍️ Bike</span>
+      <span class="tag life" data-key="rural" data-kind="category" onclick="toggleTag(this)">🌾 Rural</span>
+      <span class="tag life" data-key="life" data-kind="category" onclick="toggleTag(this)">🌱 Life</span>
+      <span class="tag life" data-key="random" data-kind="category" onclick="toggleTag(this)">💡 Random</span>
+
+      <!-- Actions -->
+      <span class="tag pro" data-key="research" data-kind="action" onclick="toggleTag(this)">🔎 Research</span>
+      <span class="tag pro" data-key="heavy" data-kind="action" onclick="toggleTag(this)">🚛 Heavy</span>
+    </div>
+  </div>
+
+  <div class="btn-row">
+    <button id="voiceBtn" onclick="toggleVoice()">🎤 音声入力</button>
+    <button id="pushBtn" onclick="pushToGitHub()">🚀 GitHubへ</button>
+    <button id="clearBtn" onclick="clearIdea()">🗑</button>
+  </div>
+
+  <div class="status" id="status"></div>
+</div>
+
+<!-- Recent pushes -->
+<div class="card" id="historyCard" style="display:none;">
+  <label>最近プッシュしたアイデア</label>
+  <div id="historyList"></div>
+</div>
+
+<script>
+  let recognition = null;
+  let isListening = false;
+  let history = JSON.parse(localStorage.getItem('ideaHistory') || '[]');
+
+  function loadSettings() {
+    document.getElementById('ghUser').value = localStorage.getItem('ghUser') || 'h1rokun59';
+    document.getElementById('ghRepo').value = localStorage.getItem('ghRepo') || 'Mylife';
+    document.getElementById('ghToken').value = localStorage.getItem('ghToken') || '';
+
+    if (localStorage.getItem('ghToken')) {
+      document.getElementById('settingsDetails').removeAttribute('open');
+    } else {
+      document.getElementById('settingsDetails').setAttribute('open', '');
+    }
+    renderHistory();
+  }
+
+  function saveSettings() {
+    localStorage.setItem('ghUser', document.getElementById('ghUser').value.trim());
+    localStorage.setItem('ghRepo', document.getElementById('ghRepo').value.trim());
+    localStorage.setItem('ghToken', document.getElementById('ghToken').value.trim());
+    setStatus('✅ 設定を保存しました', 'success');
+    document.getElementById('settingsDetails').removeAttribute('open');
+  }
+
+  function toggleTag(el) {
+    el.classList.toggle('selected');
+    syncHeavyResearch();
+  }
+
+  // Heavy を押したら Research も自動で選択（押し忘れ防止）
+  function syncHeavyResearch() {
+    const heavy = document.querySelector('.tag[data-kind="action"][data-key="heavy"]');
+    const research = document.querySelector('.tag[data-kind="action"][data-key="research"]');
+    if (!heavy || !research) return;
+
+    if (heavy.classList.contains('selected') && !research.classList.contains('selected')) {
+      research.classList.add('selected');
+    }
+  }
+
+  function getSelectedTags() {
+    return [...document.querySelectorAll('.tag.selected')].map(t => ({
+      label: t.textContent.trim(),
+      key: t.dataset.key || t.textContent.trim(),
+      kind: t.dataset.kind || 'category'
+    }));
+  }
+
+  function formatJstParts(date = new Date()) {
+    const parts = new Intl.DateTimeFormat('ja-JP', {
+      timeZone: 'Asia/Tokyo',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: false
+    }).formatToParts(date);
+
+    const map = {};
+    for (const p of parts) {
+      if (p.type !== 'literal') map[p.type] = p.value;
+    }
+
+    return {
+      dateStr: `${map.year}-${map.month}-${map.day}`,
+      timeStr: `${map.hour}:${map.minute}:${map.second}`,
+      timestamp: `${map.year}-${map.month}-${map.day}T${map.hour}-${map.minute}-${map.second}`
+    };
+  }
+
+  function generateIdeaId() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return `idea-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
+  }
+
+  function toggleVoice() {
+    if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+      setStatus('❌ このブラウザは音声認識未対応です（Chrome推奨）', 'error');
+      return;
+    }
+    if (isListening) { recognition.stop(); return; }
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SpeechRecognition();
+    recognition.lang = 'ja-JP';
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    let finalTranscript = document.getElementById('ideaText').value;
+
+    recognition.onstart = () => {
+      isListening = true;
+      document.getElementById('voiceBtn').textContent = '⏹ 停止';
+      document.getElementById('voiceBtn').classList.add('listening');
+      setStatus('🎤 聞いています...', 'info');
+    };
+
+    recognition.onresult = (e) => {
+      let interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) finalTranscript += e.results[i][0].transcript;
+        else interim = e.results[i][0].transcript;
+      }
+      document.getElementById('ideaText').value = finalTranscript + interim;
+    };
+
+    recognition.onend = () => {
+      isListening = false;
+      document.getElementById('voiceBtn').textContent = '🎤 音声入力';
+      document.getElementById('voiceBtn').classList.remove('listening');
+      setStatus('✅ 音声入力完了', 'success');
+    };
+
+    recognition.onerror = (e) => { setStatus(`❌ エラー: ${e.error}`, 'error'); };
+    recognition.start();
+  }
+
+  async function pushToGitHub() {
+    const text = document.getElementById('ideaText').value.trim();
+    if (!text) { setStatus('❌ アイデアを入力してください', 'error'); return; }
+
+    const user = localStorage.getItem('ghUser') || 'h1rokun59';
+    const repo = localStorage.getItem('ghRepo') || 'Mylife';
+    const token = localStorage.getItem('ghToken');
+
+    if (!token) {
+      setStatus('❌ GitHub設定のTokenを入力してください', 'error');
+      document.getElementById('settingsDetails').setAttribute('open', '');
+      return;
+    }
+
+    const selectedTags = getSelectedTags();
+    const categoryTags = selectedTags.filter(t => t.kind === 'category');
+    const actionTags = selectedTags.filter(t => t.kind === 'action');
+
+    const hasHeavy = actionTags.some(t => t.key === 'heavy');
+    const executionMode = hasHeavy ? 'super-heavy' : 'normal';
+
+    const now = new Date();
+    const { dateStr, timeStr, timestamp } = formatJstParts(now);
+    const nowUtc = now.toISOString();
+    const nowJst = `${dateStr} ${timeStr}`;
+    const ideaId = generateIdeaId();
+
+    const tagLine = categoryTags.length > 0
+      ? `**Tags:** ${categoryTags.map(t => t.label).join(' ')}`
+      : '';
+
+    const tagKeysLine = categoryTags.length > 0
+      ? `**TagKeys:** ${categoryTags.map(t => t.key).join(',')}`
+      : '';
+
+    // Actions: research / heavy（heavy は super-heavy のスイッチとして扱う）
+    // heavy が選ばれている場合は research を必ず含める（UIでも自動選択してるが保険）
+    const actionKeys = [...new Set(actionTags.map(t => t.key))];
+    if (hasHeavy && !actionKeys.includes('research')) actionKeys.push('research');
+
+    const actionsLine = actionKeys.length > 0
+      ? `**Actions:** ${actionKeys.join(',')}`
+      : '';
+
+    const modeLine = `**Mode:** ${executionMode}`;
+
+    const metadataLines = [
+      `**Idea-ID:** ${ideaId}`,
+      `**Created-At-UTC:** ${nowUtc}`,
+      `**Created-At-JST:** ${nowJst}`,
+      modeLine,
+      tagLine,
+      tagKeysLine,
+      actionsLine
+    ].filter(Boolean).join('\n');
+
+    const content = `# 💡 ${nowJst}
+
+${metadataLines}
+
+${text}
+
+---
+*Captured via Idea Capture App*
+`;
+
+    const filename = `ideas/${dateStr}/${timestamp}.md`;
+    const encoded = btoa(unescape(encodeURIComponent(content)));
+
+    const btn = document.getElementById('pushBtn');
+    btn.disabled = true;
+    setStatus('⏳ プッシュ中...', 'info');
+
+    try {
+      const res = await fetch(
+        `https://api.github.com/repos/${user}/${repo}/contents/${filename}`,
+        {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            message: `💡 idea: ${text.slice(0, 50)}${text.length > 50 ? '...' : ''}`,
+            content: encoded,
+          }),
+        }
+      );
+
+      if (res.ok) {
+        const data = await res.json();
+        setStatus('✅ GitHubにプッシュしました！', 'success');
+        history.unshift({
+          text: text.slice(0, 80),
+          tags: selectedTags.map(t => t.label),
+          time: nowJst,
+          url: data.content && data.content.html_url ? data.content.html_url : ''
+        });
+        if (history.length > 10) history.pop();
+        localStorage.setItem('ideaHistory', JSON.stringify(history));
+        clearIdea();
+        renderHistory();
+      } else {
+        const err = await res.json();
+        setStatus(`❌ エラー: ${err.message}`, 'error');
+      }
+    } catch (e) {
+      setStatus(`❌ ネットワークエラー: ${e.message}`, 'error');
+    } finally {
+      btn.disabled = false;
+    }
+  }
+
+  function clearIdea() {
+    document.getElementById('ideaText').value = '';
+    document.querySelectorAll('.tag.selected').forEach(t => t.classList.remove('selected'));
+  }
+
+  function setStatus(msg, type = '') {
+    const el = document.getElementById('status');
+    el.textContent = msg;
+    el.className = `status ${type}`;
+    if (type === 'success') {
+      setTimeout(() => {
+        el.textContent = '';
+        el.className = 'status';
+      }, 3000);
+    }
+  }
+
+  function renderHistory() {
+    if (history.length === 0) return;
+    document.getElementById('historyCard').style.display = 'block';
+    document.getElementById('historyList').innerHTML = history.slice(0, 5).map(h => `
+      <div class="history-item">
+        <strong>${h.text}${h.text.length >= 80 ? '...' : ''}</strong><br>
+        <span>${(h.tags || []).join(' ')} · ${h.time || ''}</span>
+        ${h.url ? `<br><a href="${h.url}" target="_blank" rel="noopener noreferrer">GitHubで開く</a>` : ''}
+      </div>
+    `).join('');
+  }
+
+  loadSettings();
+</script>
+
+</body>
+</html>
